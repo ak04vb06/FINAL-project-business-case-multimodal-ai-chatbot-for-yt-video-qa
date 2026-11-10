@@ -1,5 +1,8 @@
 .env
 chroma_db/
+data/transcripts/
 __pycache__/
 *.pyc
 *.pkl
+.pytest_cache/
+.venv/

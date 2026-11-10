@@ -1,0 +1,21 @@
+[theme]
+base = "dark"
+primaryColor = "#8b5cf6"
+backgroundColor = "#0c0816"
+secondaryBackgroundColor = "#1a1130"
+textColor = "#efeaf9"
+borderColor = "#2f2352"
+linkColor = "#a78bfa"
+baseRadius = "0.75rem"
+font = "DM Sans:https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap"
+headingFont = "Syne:https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap"
+
+[theme.sidebar]
+backgroundColor = "#120b20"
+secondaryBackgroundColor = "#1a1130"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
