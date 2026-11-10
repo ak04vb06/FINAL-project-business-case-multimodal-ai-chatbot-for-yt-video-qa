@@ -48,6 +48,13 @@ MMR_LAMBDA = 0.7          # 1 = only relevance, 0 = only diversity
 HISTORY_MESSAGES = int(_env("HISTORY_MESSAGES", "20"))   # messages of memory sent with each question
 MAX_QUESTION_CHARS = 2000
 
+# -- voice questions (optional: pip install faster-whisper) -------------------
+WHISPER_MODEL = _env("WHISPER_MODEL", "small")      # tiny, base, small, medium, large-v3
+WHISPER_DEVICE = _env("WHISPER_DEVICE", "cpu")      # "cuda" needs the CUDA libraries of CTranslate2
+
+# -- feedback ---------------------------------------------------------------
+FEEDBACK_FILE = ROOT / "data" / "feedback.jsonl"
+
 # -- LangSmith (optional) ---------------------------------------------------
 LANGSMITH_PROJECT = _env("LANGCHAIN_PROJECT", "youtube-rag-balade-mentale")
 

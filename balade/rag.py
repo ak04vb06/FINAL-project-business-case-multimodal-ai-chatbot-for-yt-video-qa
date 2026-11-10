@@ -9,6 +9,7 @@ from langchain_core.documents import Document
 
 from balade import config
 from balade.i18n import t
+from balade.search import KeywordIndex, reciprocal_rank_fusion
 from balade.transcripts import format_timestamp, video_url
 
 # The model answers with this marker when the excerpts do not contain the answer.
@@ -163,37 +164,48 @@ class RagEngine:
                  lambda_mult: float = config.MMR_LAMBDA, context_tokens: int = config.LLM_CONTEXT):
         self.store = store
         self.llm = llm
+        self.keywords = KeywordIndex(store)
         self.k = k
         self.fetch_k = fetch_k
         self.lambda_mult = lambda_mult
         # ~3 characters per token is a safe estimate for French and English with Llama.
         self.budget_chars = (context_tokens - config.ANSWER_TOKENS) * 3
 
-    def retrieve(self, query: str) -> list[Document]:
-        """MMR search: relevant excerpts that do not repeat each other."""
+    def retrieve(self, query: str, video_id: str | None = None) -> list[Document]:
+        """Hybrid search, optionally limited to one video:
+        MMR vector search (relevant excerpts that don't repeat each other) + BM25 keyword search,
+        merged with Reciprocal Rank Fusion."""
         if self.store._collection.count() == 0:
             return []
-        return self.store.max_marginal_relevance_search(
-            query, k=self.k, fetch_k=self.fetch_k, lambda_mult=self.lambda_mult)
+        where = {"video_id": video_id} if video_id else None
+        semantic = self.store.max_marginal_relevance_search(
+            query, k=self.k, fetch_k=self.fetch_k, lambda_mult=self.lambda_mult, filter=where)
+        keyword = self.keywords.search(query, self.k, video_id)
+        return reciprocal_rank_fusion([semantic, keyword], self.k)
 
-    def stream(self, prompt: str) -> Iterator[str]:
-        for chunk in self.llm.stream(prompt):
+    def stream(self, prompt: str, llm=None) -> Iterator[str]:
+        for chunk in (llm or self.llm).stream(prompt):
             if isinstance(chunk.content, str) and chunk.content:
                 yield chunk.content
 
-    def answer(self, question: str, history: list[dict], lang: str) -> "AnswerStream":
-        return AnswerStream(self, question, history, lang)
+    def answer(self, question: str, history: list[dict], lang: str, *,
+               video_id: str | None = None, llm=None) -> "AnswerStream":
+        """`video_id` limits the search to one video; `llm` overrides the default model."""
+        return AnswerStream(self, question, history, lang, video_id=video_id, llm=llm)
 
 
 class AnswerStream:
     """Iterate over it to get the answer token by token (for st.write_stream).
     Once the iteration is over, `text`, `from_videos` and `sources` describe the answer."""
 
-    def __init__(self, engine: RagEngine, question: str, history: list[dict], lang: str):
+    def __init__(self, engine: RagEngine, question: str, history: list[dict], lang: str, *,
+                 video_id: str | None = None, llm=None):
         self.engine = engine
         self.question = question
         self.history = history
         self.lang = lang
+        self.video_id = video_id
+        self.llm = llm
         self.text = ""
         self.from_videos = False
         self.sources: list[Source] = []
@@ -204,14 +216,14 @@ class AnswerStream:
 
     def __iter__(self) -> Iterator[str]:
         language = LANGUAGE_NAMES.get(self.lang, "French")
-        docs = self.engine.retrieve(retrieval_query(self.question, self.history))
+        docs = self.engine.retrieve(retrieval_query(self.question, self.history), self.video_id)
 
         if docs:
             context = format_context(docs)
             room = self.engine.budget_chars - len(RAG_PROMPT) - len(context) - len(self.question)
             prompt = RAG_PROMPT.format(marker=NOT_FOUND, language=language, context=context,
                                        history=fit_history(self.history, room), question=self.question)
-            found = yield from self._stream_unless_not_found(self.engine.stream(prompt))
+            found = yield from self._stream_unless_not_found(self.engine.stream(prompt, self.llm))
             if found and not looks_like_not_found(self.text):
                 self.from_videos = True
                 self.sources = [Source.from_document(doc) for doc in docs]
@@ -225,7 +237,7 @@ class AnswerStream:
         room = self.engine.budget_chars - len(GENERAL_PROMPT) - len(self.question)
         prompt = GENERAL_PROMPT.format(language=language, history=fit_history(self.history, room),
                                        question=self.question)
-        for token in self.engine.stream(prompt):
+        for token in self.engine.stream(prompt, self.llm):
             yield from self._emit(token)
 
     def _stream_unless_not_found(self, tokens: Iterator[str]):

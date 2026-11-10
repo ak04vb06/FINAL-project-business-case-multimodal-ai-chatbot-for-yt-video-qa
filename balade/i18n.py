@@ -80,6 +80,37 @@ TEXTS = {
                     "ou ajoute une vidéo depuis la barre latérale.",
                     "The index is empty. Run `python build_index.py` to index the 7 videos, "
                     "or add a video from the sidebar."),
+
+    # scope, summary, removal
+    "scope.label": ("Chercher dans", "Search in"),
+    "scope.all": ("Toutes les vidéos", "All videos"),
+    "scope.placeholder": ("Pose ta question sur « {title} »…", "Ask about “{title}”…"),
+    "summary.button": ("Résumer cette vidéo", "Summarise this video"),
+    "summary.request": ("Résume la vidéo « {title} »", "Summarise the video “{title}”"),
+    "summary.moments": ("Moments clés", "Key moments"),
+    "badge.summary": ("Résumé de la vidéo", "Video summary"),
+    "remove.button": ("Retirer de l'index", "Remove from the index"),
+    "remove.confirm": ("Retirer « {title} » de l'index ? Tu pourras la rajouter avec son lien.",
+                       "Remove “{title}” from the index? You can add it back with its link."),
+    "remove.yes": ("Oui, retirer", "Yes, remove"),
+    "remove.done": ("« {title} » retirée de l'index.", "“{title}” removed from the index."),
+
+    # options
+    "options.title": ("Options", "Options"),
+    "options.model": ("Modèle", "Model"),
+    "options.model_help": ("Modèles installés dans Ollama. Installe-en d'autres avec `ollama pull`.",
+                           "Models installed in Ollama. Install more with `ollama pull`."),
+    "options.export": ("Exporter (.md)", "Export (.md)"),
+    "export.you": ("Toi", "You"),
+    "export.sources": ("Sources", "Sources"),
+
+    # answers: actions
+    "chat.regenerate": ("Régénérer", "Regenerate"),
+    "chat.seconds": ("{seconds} s", "{seconds} s"),
+    "feedback.thanks": ("Merci pour ton avis !", "Thanks for the feedback!"),
+    "voice.empty": ("Je n'ai rien entendu, réessaie.", "I didn't hear anything, try again."),
+    "voice.error": ("La reconnaissance vocale a échoué : {detail}", "Speech recognition failed: {detail}"),
+    "voice.loading": ("Transcription…", "Transcribing…"),
 }
 
 LANGUAGES = ("fr", "en")

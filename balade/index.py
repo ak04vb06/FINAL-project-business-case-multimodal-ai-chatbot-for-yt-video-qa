@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from chromadb.config import Settings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
@@ -71,6 +72,9 @@ def open_store(embeddings: Embeddings, persist_dir: Path = config.CHROMA_DIR,
         embedding_function=embeddings,
         persist_directory=str(persist_dir),
         collection_metadata={"hnsw:space": "cosine"},
+        # No usage statistics sent by ChromaDB: everything stays on this machine.
+        client_settings=Settings(anonymized_telemetry=False, is_persistent=True,
+                                 persist_directory=str(persist_dir)),
     )
 
 
@@ -136,6 +140,21 @@ def add_video(store: Chroma, video: VideoInfo, segments: list[Segment],
     ids = [f"{video.video_id}-{i:04d}" for i in range(len(documents))]
     store.add_documents(documents, ids=ids)
     return len(documents)
+
+
+def remove_video(store: Chroma, video_id: str) -> int:
+    """Deletes every chunk of a video. Returns the number of chunks removed."""
+    ids = store.get(where={"video_id": video_id})["ids"]
+    if ids:
+        store.delete(ids=ids)
+    return len(ids)
+
+
+def video_timeline(store: Chroma, video_id: str) -> list[tuple[float, str]]:
+    """(start time, text) of every chunk of a video, in order. Used to summarise a video."""
+    data = store.get(where={"video_id": video_id}, include=["documents", "metadatas"])
+    return sorted((float(meta.get("start", 0) or 0), text)
+                  for text, meta in zip(data["documents"], data["metadatas"]))
 
 
 def chunk_count(store: Chroma) -> int:

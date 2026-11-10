@@ -111,6 +111,13 @@ a.ba-video:hover { background: var(--surface); border-color: var(--border); }
   border-radius: 4px 18px 18px 18px; max-width: 92%;
 }
 [data-testid="stChatMessageContent"] p:last-child { margin-bottom: 0; }
+[class*="st-key-fb-"] { opacity: .7; }
+[class*="st-key-fb-"]:hover { opacity: 1; }
+[class*="st-key-msg-assistant"] [data-testid="stMarkdownContainer"] a {
+  color: var(--violet-2); text-decoration: none; font-weight: 600; }
+[class*="st-key-msg-assistant"] [data-testid="stMarkdownContainer"] a:hover { color: #fff; }
+[class*="st-key-regen-"] button { color: var(--muted); font-size: .8rem; }
+[class*="st-key-regen-"] button:hover { color: var(--violet-2); }
 [class*="st-key-msg-user"] [data-testid="stChatMessageContent"] p { margin: 0; color: #fff; }
 [data-testid="stChatMessageContent"] [data-testid="stMarkdownContainer"] { margin-bottom: 0; }
 [data-testid="stChatMessageAvatarCustom"], [data-testid="stChatMessageAvatarAssistant"] {
@@ -121,6 +128,8 @@ a.ba-video:hover { background: var(--surface); border-color: var(--border); }
 .ba-badge { font-size: .72rem; padding: .18rem .6rem; border-radius: 99px; border: 1px solid; }
 .ba-badge--videos { color: var(--teal); border-color: rgba(45, 212, 191, .35); background: rgba(45, 212, 191, .08); }
 .ba-badge--general { color: var(--amber); border-color: rgba(251, 191, 36, .35); background: rgba(251, 191, 36, .08); }
+.ba-badge--summary { color: var(--violet-2); border-color: rgba(167, 139, 250, .4); background: rgba(139, 92, 246, .12); }
+.ba-time { font-size: .72rem; color: var(--muted); margin-left: .15rem; }
 a.ba-watch { font-size: .74rem; padding: .18rem .65rem; border-radius: 99px; text-decoration: none !important;
   color: #fff !important; background: linear-gradient(135deg, var(--violet), var(--magenta)); }
 a.ba-watch:hover { filter: brightness(1.12); }
@@ -182,14 +191,25 @@ def hero_html(lang: str) -> str:
             f"<p class='ba-sub'>{escape(t('welcome.sub', lang))}</p></div>")
 
 
-def meta_html(from_videos: bool, sources: list[Source], lang: str) -> str:
-    if not from_videos:
-        return f"<div class='ba-meta'><span class='ba-badge ba-badge--general'>{escape(t('badge.general', lang))}</span></div>"
-    parts = [f"<span class='ba-badge ba-badge--videos'>{escape(t('badge.videos', lang))}</span>"]
-    if sources:
-        best = sources[0]   # the most relevant excerpt
-        label = f"▶ {t('chat.watch', lang, time=best.timestamp)} · {best.display_title(lang)}"
-        parts.append(f"<a class='ba-watch' href='{escape(best.url)}' target='_blank' rel='noopener'>{escape(label)}</a>")
+def meta_html(kind: str, from_videos: bool, sources: list[Source], lang: str,
+              seconds: float | None = None, video: tuple[str, str] | None = None) -> str:
+    """The row under an answer: where it comes from, a link to the right moment, and the answer time."""
+    parts = []
+    if kind == "summary":
+        parts.append(f"<span class='ba-badge ba-badge--summary'>{escape(t('badge.summary', lang))}</span>")
+        if video:
+            parts.append(f"<a class='ba-watch' href='{escape(video_url(video[0]))}' target='_blank' "
+                         f"rel='noopener'>▶ {escape(video[1])}</a>")
+    elif not from_videos:
+        parts.append(f"<span class='ba-badge ba-badge--general'>{escape(t('badge.general', lang))}</span>")
+    else:
+        parts.append(f"<span class='ba-badge ba-badge--videos'>{escape(t('badge.videos', lang))}</span>")
+        if sources:
+            best = sources[0]   # the most relevant excerpt
+            label = f"▶ {t('chat.watch', lang, time=best.timestamp)} · {best.display_title(lang)}"
+            parts.append(f"<a class='ba-watch' href='{escape(best.url)}' target='_blank' rel='noopener'>{escape(label)}</a>")
+    if seconds is not None:
+        parts.append(f"<span class='ba-time'>⏱ {escape(t('chat.seconds', lang, seconds=seconds))}</span>")
     return f"<div class='ba-meta'>{''.join(parts)}</div>"
 
 

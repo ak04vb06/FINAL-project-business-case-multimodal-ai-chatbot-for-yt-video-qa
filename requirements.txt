@@ -8,6 +8,7 @@ chromadb==1.5.2
 youtube-transcript-api>=1.2,<2
 python-dotenv==1.2.1
 requests==2.32.5
+rank-bm25==0.2.2
 
 # ── Embeddings with sentence-transformers (EMBEDDING_PROVIDER=huggingface, the default) ──
 # Not needed with EMBEDDING_PROVIDER=ollama.
@@ -16,6 +17,9 @@ requests==2.32.5
 langchain-huggingface==1.2.0
 sentence-transformers==5.2.3
 torch==2.10.0
+
+# ── Voice questions (optional) ────────────────────────────────────────────────
+# faster-whisper
 
 # ── Notebook only (agent, evaluation) ─────────────────────────────────────────
 langchain==1.2.10
