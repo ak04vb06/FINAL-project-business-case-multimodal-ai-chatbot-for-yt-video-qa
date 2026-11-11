@@ -199,17 +199,17 @@ def meta_html(kind: str, from_videos: bool, sources: list[Source], lang: str,
         parts.append(f"<span class='ba-badge ba-badge--summary'>{escape(t('badge.summary', lang))}</span>")
         if video:
             parts.append(f"<a class='ba-watch' href='{escape(video_url(video[0]))}' target='_blank' "
-                         f"rel='noopener'>▶ {escape(video[1])}</a>")
+                         f"rel='noopener'>{escape(video[1])}</a>")
     elif not from_videos:
         parts.append(f"<span class='ba-badge ba-badge--general'>{escape(t('badge.general', lang))}</span>")
     else:
         parts.append(f"<span class='ba-badge ba-badge--videos'>{escape(t('badge.videos', lang))}</span>")
         if sources:
             best = sources[0]   # the most relevant excerpt
-            label = f"▶ {t('chat.watch', lang, time=best.timestamp)} · {best.display_title(lang)}"
+            label = f"{t('chat.watch', lang, time=best.timestamp)} · {best.display_title(lang)}"
             parts.append(f"<a class='ba-watch' href='{escape(best.url)}' target='_blank' rel='noopener'>{escape(label)}</a>")
     if seconds is not None:
-        parts.append(f"<span class='ba-time'>⏱ {escape(t('chat.seconds', lang, seconds=seconds))}</span>")
+        parts.append(f"<span class='ba-time'>{escape(t('chat.seconds', lang, seconds=seconds))}</span>")
     return f"<div class='ba-meta'>{''.join(parts)}</div>"
 
 
@@ -219,7 +219,7 @@ def sources_html(sources: list[Source], lang: str, max_chars: int = 320) -> str:
         excerpt = source.excerpt if len(source.excerpt) <= max_chars else source.excerpt[:max_chars].rsplit(" ", 1)[0] + "…"
         items.append(
             f"<div class='ba-source'><a href='{escape(source.url)}' target='_blank' rel='noopener'>"
-            f"▶ {escape(source.timestamp)} · {escape(source.display_title(lang))}</a>"
+            f"{escape(source.timestamp)} · {escape(source.display_title(lang))}</a>"
             f"<p>{escape(excerpt)}</p></div>"
         )
     return "".join(items)

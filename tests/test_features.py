@@ -99,7 +99,7 @@ def test_build_transcript_uses_times_and_fits_the_budget(store):
 
 def test_link_timestamps():
     text = link_timestamps("- [3:42] Le zéro absolu\n- [1:02:03] Fin", "abcdefghijk")
-    assert "[▶ 3:42](https://www.youtube.com/watch?v=abcdefghijk&t=222s)" in text
+    assert "[3:42](https://www.youtube.com/watch?v=abcdefghijk&t=222s)" in text
     assert "&t=3723s" in text
 
 
@@ -145,16 +145,87 @@ def test_installed_chat_models_hides_embedding_models(monkeypatch):
     assert models.installed_chat_models("http://localhost:11434") == []
 
 
-def test_voice_transcriber_with_a_fake_whisper(monkeypatch):
-    class FakeWhisperModel:
-        def __init__(self, size, device, compute_type):
-            self.args = (size, device, compute_type)
+class FakeWhisperModel:
+    def __init__(self, size, device, compute_type):
+        self.args = (size, device, compute_type)
 
-        def transcribe(self, audio, vad_filter, beam_size):
-            assert audio.read() == b"RIFF-fake-wav"
-            return iter([types.SimpleNamespace(text=" C'est quoi "), types.SimpleNamespace(text="le zéro absolu ? ")]), None
+    def transcribe(self, audio, vad_filter, beam_size):
+        assert audio.read()[:4] == b"RIFF"
+        return iter([types.SimpleNamespace(text=" C'est quoi "), types.SimpleNamespace(text="le zéro absolu ? ")]), None
 
+
+def wav_bytes(seconds=1.0, rate=16000, channels=1):
+    import io
+    import wave
+
+    import numpy as np
+
+    samples = (np.sin(np.linspace(0, 440 * 6.28 * seconds, int(rate * seconds))) * 12000).astype("<i2")
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as file:
+        file.setnchannels(channels)
+        file.setsampwidth(2)
+        file.setframerate(rate)
+        file.writeframes(np.repeat(samples, channels).tobytes())
+    return buffer.getvalue()
+
+
+def fake_transformers(monkeypatch, seen):
+    def pipeline(task, model, device, chunk_length_s):
+        seen["model"] = model
+
+        def run(inputs):
+            seen["samples"], seen["rate"] = len(inputs["raw"]), inputs["sampling_rate"]
+            return {"text": " C'est quoi le zéro absolu ? "}
+        return run
+
+    monkeypatch.setitem(sys.modules, "transformers", types.SimpleNamespace(pipeline=pipeline))
+    monkeypatch.setitem(sys.modules, "torch", types.SimpleNamespace(
+        cuda=types.SimpleNamespace(is_available=lambda: False)))
+
+
+def test_voice_with_faster_whisper(monkeypatch):
     monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=FakeWhisperModel))
-    transcriber = voice.Transcriber("small", "cpu")
-    assert transcriber.model.args == ("small", "cpu", "int8")
-    assert transcriber.transcribe(b"RIFF-fake-wav") == "C'est quoi le zéro absolu ?"
+    transcriber = voice.Transcriber("small", "cpu", backend="auto")
+    assert transcriber.transcribe(wav_bytes()) == "C'est quoi le zéro absolu ?"
+    assert transcriber.backend.name == "faster-whisper"
+    assert transcriber.backend.model.args == ("small", "cpu", "int8")
+
+
+def test_voice_falls_back_to_transformers_when_windows_blocks_the_library_at_load(monkeypatch):
+    class Blocked:
+        def __init__(self, *args, **kwargs):
+            raise OSError(4551, "An Application Control policy has blocked this file")
+
+    seen = {}
+    monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=Blocked))
+    fake_transformers(monkeypatch, seen)
+    transcriber = voice.Transcriber("small", "cpu", backend="auto")
+    assert transcriber.transcribe(wav_bytes(seconds=1.0, rate=48000, channels=2)) == "C'est quoi le zéro absolu ?"
+    assert transcriber.backend.name == "transformers"
+    assert seen == {"model": "openai/whisper-small", "samples": 16000, "rate": 16000}   # stereo 48 kHz -> mono 16 kHz
+
+
+def test_voice_falls_back_when_the_library_is_blocked_on_first_use(monkeypatch):
+    class BlockedOnUse(FakeWhisperModel):
+        def transcribe(self, audio, vad_filter, beam_size):
+            raise OSError(4551, "An Application Control policy has blocked this file")
+
+    seen = {}
+    monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=BlockedOnUse))
+    fake_transformers(monkeypatch, seen)
+    transcriber = voice.Transcriber("small", "cpu", backend="auto")
+    assert transcriber.transcribe(wav_bytes()) == "C'est quoi le zéro absolu ?"
+    assert transcriber.backend.name == "transformers"
+    assert transcriber.transcribe(wav_bytes(seconds=0.1)) == ""          # too short: nothing said
+
+
+def test_voice_reports_when_no_backend_works(monkeypatch):
+    class Blocked:
+        def __init__(self, *args, **kwargs):
+            raise OSError(4551, "blocked")
+
+    monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=Blocked))
+    monkeypatch.setitem(sys.modules, "transformers", None)       # import fails
+    with pytest.raises(RuntimeError, match="No speech recognition backend"):
+        voice.Transcriber("small", "cpu", backend="auto").transcribe(wav_bytes())

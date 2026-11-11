@@ -51,6 +51,8 @@ MAX_QUESTION_CHARS = 2000
 # -- voice questions (optional: pip install faster-whisper) -------------------
 WHISPER_MODEL = _env("WHISPER_MODEL", "small")      # tiny, base, small, medium, large-v3
 WHISPER_DEVICE = _env("WHISPER_DEVICE", "cpu")      # "cuda" needs the CUDA libraries of CTranslate2
+# "auto" tries faster-whisper, then Whisper through transformers/PyTorch (see balade/voice.py).
+WHISPER_BACKEND = _env("WHISPER_BACKEND", "auto")   # auto, faster-whisper, transformers
 
 # -- feedback ---------------------------------------------------------------
 FEEDBACK_FILE = ROOT / "data" / "feedback.jsonl"

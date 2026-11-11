@@ -26,7 +26,7 @@ from balade.ui import (apply_style, brand_html, hero_html, label_html, meta_html
 
 log = logging.getLogger("balade")
 
-st.set_page_config(page_title="Balade.AI", page_icon="🌌", layout="centered", initial_sidebar_state="auto")
+st.set_page_config(page_title="Balade.AI", page_icon=":material/auto_awesome:", layout="centered", initial_sidebar_state="auto")
 apply_style()
 
 
@@ -178,7 +178,7 @@ with st.sidebar:
         kind, text = state.pop("flash")
         getattr(st, kind)(text)
 
-    with st.expander(f"＋ {tr('add.title')}"):
+    with st.expander(tr("add.title"), icon=":material/add:"):
         with st.form("add_video", clear_on_submit=True, border=False):
             url = st.text_input(tr("add.url"), placeholder="https://youtu.be/…", help=tr("add.url_help"))
             topic = st.selectbox(tr("add.topic"), TOPICS, format_func=lambda key: t(f"topic.{key}", lang))
@@ -189,7 +189,7 @@ with st.sidebar:
     st.html(label_html(f"{tr('sidebar.videos')} · {len(videos)}"))
     st.html(videos_html(videos, lang) if videos else f"<p class='ba-sub'>{tr('sidebar.empty')}</p>")
 
-    with st.expander(f"⚙ {tr('options.title')}"):
+    with st.expander(tr("options.title"), icon=":material/settings:"):
         models = chat_models()
         if state.model not in models:
             state.model = models[0]
@@ -230,7 +230,7 @@ def show_details(message: dict) -> None:
 
 
 def show_actions(index: int, message: dict, is_last: bool) -> None:
-    """👍 / 👎 on every answer, and "regenerate" under the last one."""
+    """Thumbs up / down on every answer, and "regenerate" under the last one."""
     with st.container(horizontal=True, vertical_alignment="center", gap="medium"):
         st.feedback("thumbs", key=f"fb-{message['id']}", on_change=record_feedback, args=(index,))
         if is_last:
@@ -314,7 +314,7 @@ def reply(question: dict) -> None:
                 st.error(tr("chat.error", model=state.model))
                 return
     state.messages.append(message)
-    st.rerun()   # redraw the conversation with the 👍 / 👎 and "regenerate" buttons
+    st.rerun()   # redraw the conversation with the thumbs and "regenerate" buttons
 
 
 # -- page -------------------------------------------------------------------

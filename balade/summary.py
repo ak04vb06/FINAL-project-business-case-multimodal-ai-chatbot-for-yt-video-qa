@@ -52,4 +52,4 @@ def parse_time(value: str) -> int:
 
 def link_timestamps(text: str, video_id: str) -> str:
     """Turns every [3:42] of the summary into a link that opens the video at that moment."""
-    return _TIME_RE.sub(lambda m: f"[▶ {m.group(1)}]({video_url(video_id, parse_time(m.group(1)))})", text)
+    return _TIME_RE.sub(lambda m: f"[{m.group(1)}]({video_url(video_id, parse_time(m.group(1)))})", text)

@@ -1,4 +1,4 @@
-"""👍 / 👎 on answers, saved locally (JSON Lines) to find the questions the bot answers badly."""
+"""Thumbs up / down on answers, saved locally (JSON Lines) to find the questions the bot answers badly."""
 from __future__ import annotations
 
 import json

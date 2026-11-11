@@ -15,7 +15,7 @@ and a ChromaDB vector store. No API key and no cost per question.
 
 - **Answers from the videos.** Each answer is generated from the most relevant transcript excerpts
   and marked **From the videos**.
-- **Takes you to the right moment.** Every answer has a **▶ Watch at 3:42** link, and a **Sources**
+- **Takes you to the right moment.** Every answer has a **Watch at 3:42** link, and a **Sources**
   panel lists the excerpts used, each with its own timestamp link.
 - **Streams the answer** word by word, like a chat assistant.
 - **Says when the videos don't cover a question.** It answers from general knowledge instead, clearly
@@ -31,7 +31,7 @@ and a ChromaDB vector store. No API key and no cost per question.
 - **Add any YouTube video from the sidebar.** Paste a link: the captions are downloaded, chunked,
   embedded and indexed in a few seconds, without restarting the app. Videos can also be removed.
 - **Choose the model** among those installed in Ollama, **export the conversation** as Markdown,
-  **regenerate** an answer, and rate answers with 👍 / 👎 (saved in `data/feedback.jsonl` to spot the
+  **regenerate** an answer, and rate answers with thumbs up / down (saved in `data/feedback.jsonl` to spot the
   questions the bot answers badly).
 
 ## How it works
@@ -122,6 +122,9 @@ writing to the same ChromaDB folder at once can corrupt the running app's view o
 
 **Voice questions (optional):** `pip install faster-whisper`. The microphone button then appears in
 the message box. The first question downloads the Whisper model (`small`, about 500 MB).
+On Windows 11, Smart App Control can refuse to load faster-whisper's libraries (`WinError 4551`);
+the app then switches by itself to Whisper through `transformers` and PyTorch, which are already
+installed for the embeddings.
 
 **Lighter option, without PyTorch:** set `EMBEDDING_PROVIDER=ollama` in `.env`, run
 `ollama pull bge-m3`, and skip the torch / sentence-transformers lines. Rebuild the index after
@@ -140,7 +143,8 @@ Copy `.env.example` to `.env` to change them. Every setting is optional.
 | `TOP_K` | `6` | Excerpts given to the model for each question |
 | `HISTORY_MESSAGES` | `20` | Messages of conversation memory |
 | `WHISPER_MODEL` | `small` | Speech recognition model (`base` is faster, `medium` more accurate) |
-| `WHISPER_DEVICE` | `cpu` | `cuda` to run Whisper on the GPU (needs the CUDA libraries of CTranslate2) |
+| `WHISPER_DEVICE` | `cpu` | `cuda` to run Whisper on the GPU |
+| `WHISPER_BACKEND` | `auto` | `auto` (faster-whisper, then transformers), `faster-whisper` or `transformers` |
 | `LANGCHAIN_API_KEY` | | Turns on LangSmith tracing when set |
 
 **About the context window.** Every token in the window uses GPU memory (about 128 KB per token
@@ -156,9 +160,9 @@ memory, `LLM_CONTEXT=65536` works too.
 pytest -q
 ```
 
-50 tests cover link parsing, timestamps, the transcript cache, chunking, language detection,
+53 tests cover link parsing, timestamps, the transcript cache, chunking, language detection,
 small-talk detection, the conversation budget, indexing and removal, hybrid search, the video
-filter, summaries, export, feedback, the model list, speech recognition (with a fake Whisper), and
+filter, summaries, export, feedback, the model list, speech recognition and its fallback (with a fake Whisper), and
 the full answer flow (streaming, sources, hidden marker, fallback) with a fake model and fake
 embeddings. No GPU, model or internet connection needed.
 
@@ -175,10 +179,10 @@ balade/
   search.py          BM25 keyword index and Reciprocal Rank Fusion
   rag.py             Language, small talk, hybrid retrieval, prompts, streamed answer, fallback
   summary.py         Whole-video summary with linked key moments
-  voice.py           Speech to text (faster-whisper)
+  voice.py           Speech to text (faster-whisper, with a transformers fallback)
   models.py          Chat models installed in Ollama
   export.py          Conversation → Markdown
-  feedback.py        👍 / 👎 saved as JSON Lines
+  feedback.py        Thumbs up / down saved as JSON Lines
   i18n.py            Interface texts (FR / EN)
   ui.py              Dark purple theme and HTML pieces (all text escaped)
 data/videos.json     The 7 indexed videos
