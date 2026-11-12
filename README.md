@@ -91,8 +91,8 @@ LangGraph and LangSmith (notebook) · pytest
 You need Python 3.11+, [Ollama](https://ollama.com) and, ideally, an NVIDIA GPU (it also runs on CPU, more slowly).
 
 ```bash
-git clone https://github.com/ak04vb06/FINAL-project-business-case-multimodal-ai-chatbot-for-yt-video-qa.git
-cd FINAL-project-business-case-multimodal-ai-chatbot-for-yt-video-qa
+git clone https://github.com/ak04vb06/balade-ai-youtube-rag.git
+cd balade-ai-youtube-rag
 
 python -m venv .venv
 .venv\Scripts\activate                 # macOS / Linux: source .venv/bin/activate
